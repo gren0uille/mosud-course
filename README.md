@@ -1,40 +1,10 @@
-# Практикум по МОСУД
+# mosud-course
 
-Камалов Т. А., группа ______.
+Практикум по МОСУД на наборе Brazilian E-Commerce Public Dataset by Olist.
 
-Сквозной курс по моделям и организации систем управления данными на наборе
-Brazilian E-Commerce Public Dataset by Olist.
+CSV-файлы в репозиторий не входят, их нужно положить в `data/olist`
+рядом с каталогом проекта. Источник: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
 
-## Структура
-
-```
-mosud-course/
-├── README.md
-└── lab01/
-    ├── docker-compose.yml   развёртывание PostgreSQL 17
-    ├── schema.sql           схемы, таблицы, импорт CSV, ключи
-    ├── check.sql            контроль строк, NULL и ссылочной целостности
-    └── README.md            параметры среды и результаты
-```
-
-## Данные
-
-CSV-файлы Olist в репозиторий не включены: каталог `data/` указан в
-`.gitignore`. Перед запуском их нужно поместить в `data/olist` рядом с
-каталогом `mosud-course`.
-
-Источник: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
-Лицензия: CC BY-NC-SA 4.0.
-
-## Соглашения курса
-
-- Исходные таблицы в схеме `olist` считаются неизменяемым набором данных.
-- Все объекты, требующие `INSERT`, `UPDATE` или `DELETE`, создаются в схеме
-  `lab`.
-- SQL-файлы выполняются сверху вниз без ручного редактирования строк.
-
-## Выполненные работы
-
-| № | Работа | Состояние |
-|---|---|---|
-| 1 | Развёртывание PostgreSQL и загрузка Olist | Выполнена |
+| № | Работа |
+|---|---|
+| 1 | Развёртывание PostgreSQL и загрузка Olist |
