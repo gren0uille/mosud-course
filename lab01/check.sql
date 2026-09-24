@@ -1,14 +1,7 @@
 -- Практическая работа № 1. Контрольные проверки загрузки Olist
--- Камалов Т. А., группа ______
---
--- Файл выполняется одним запуском после schema.sql и ничего не изменяет.
--- Проверяются три свойства: число строк, отсутствие NULL в ключевых полях
--- и отсутствие «осиротевших» ссылок.
+-- Камалов Т. А. ИНБО-20-23
 
-\echo '=== 1. Число строк в таблицах схемы olist ==='
-
--- Ожидаемые значения взяты из задания. Столбец diff показывает отклонение:
--- ноль означает, что таблица загружена полностью.
+-- число строк в каждой таблице
 SELECT table_name,
        actual_rows,
        expected_rows,
@@ -28,11 +21,7 @@ FROM (
 ) AS counts
 ORDER BY table_name;
 
-\echo ''
-\echo '=== 2. NULL в ключевых полях (должны быть нули) ==='
-
--- Поля, объявленные NOT NULL, проверяются повторно: это контроль того, что
--- CSV не содержал пустых значений там, где они недопустимы.
+-- пустые значения в ключевых полях
 SELECT 'customers.customer_id' AS column_name, count(*) AS null_count
     FROM olist.customers WHERE customer_id IS NULL
 UNION ALL SELECT 'orders.order_id', count(*)
@@ -57,13 +46,7 @@ UNION ALL SELECT 'sellers.seller_id', count(*)
     FROM olist.sellers WHERE seller_id IS NULL
 ORDER BY column_name;
 
-\echo ''
-\echo '=== 3. Осиротевшие ссылки (должны быть нули) ==='
-
--- Строки дочерней таблицы, для которых нет родительской записи. После
--- успешного создания внешних ключей такие строки существовать не могут,
--- однако проверка оставлена: она позволяет найти причину, если добавление
--- ключа завершилось ошибкой.
+-- строки, которые ссылаются на несуществующую запись
 SELECT 'order_items -> orders' AS relation, count(*) AS orphan_rows
 FROM olist.order_items oi
 LEFT JOIN olist.orders o ON o.order_id = oi.order_id
@@ -95,10 +78,7 @@ LEFT JOIN olist.customers c ON c.customer_id = o.customer_id
 WHERE c.customer_id IS NULL
 ORDER BY relation;
 
-\echo ''
-\echo '=== 4. Созданные ограничения ==='
-
--- Контроль того, что первичные и внешние ключи действительно созданы.
+-- какие ключи созданы
 SELECT tc.constraint_type,
        tc.table_name,
        tc.constraint_name

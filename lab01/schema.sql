@@ -1,25 +1,11 @@
 -- Практическая работа № 1. Развёртывание PostgreSQL и загрузка Olist
--- Камалов Т. А., группа ______, вариант не предусмотрен (работа общая)
---
--- Файл выполняется сверху вниз в базе olist.
--- Порядок действий: схемы -> таблицы -> импорт CSV -> ключи -> ANALYZE.
--- Вторичные индексы намеренно не создаются: они исследуются в работе № 13.
+-- Камалов Т. А. ИНБО-20-23
 
--- ---------------------------------------------------------------------------
--- 1. Схемы
--- ---------------------------------------------------------------------------
--- olist -- исходный неизменяемый набор данных.
--- lab   -- учебная схема для объектов, которые будут изменяться в работах 2-16.
-
+-- olist для исходных данных, lab для своих таблиц
 CREATE SCHEMA IF NOT EXISTS olist;
 CREATE SCHEMA IF NOT EXISTS lab;
 
--- ---------------------------------------------------------------------------
--- 2. Таблицы исходного набора данных
--- ---------------------------------------------------------------------------
--- Повторный запуск файла не должен завершаться ошибкой, поэтому таблицы
--- пересоздаются. CASCADE снимает внешние ключи, созданные ранее в разделе 4.
-
+-- удаляю таблицы, чтобы файл можно было запускать повторно
 DROP TABLE IF EXISTS olist.order_reviews CASCADE;
 DROP TABLE IF EXISTS olist.order_payments CASCADE;
 DROP TABLE IF EXISTS olist.order_items CASCADE;
@@ -30,6 +16,7 @@ DROP TABLE IF EXISTS olist.sellers CASCADE;
 DROP TABLE IF EXISTS olist.geolocation CASCADE;
 DROP TABLE IF EXISTS olist.product_category_name_translation CASCADE;
 
+-- таблицы Olist
 CREATE TABLE olist.customers (
     customer_id text NOT NULL,
     customer_unique_id text,
@@ -109,18 +96,7 @@ CREATE TABLE olist.product_category_name_translation (
     product_category_name_english text
 );
 
--- ---------------------------------------------------------------------------
--- 3. Импорт CSV
--- ---------------------------------------------------------------------------
--- Каталог с файлами примонтирован в контейнер как /data/olist (см.
--- docker-compose.yml), поэтому используется серверная команда COPY.
--- При работе с локальной СУБД вместо неё применяется psql-команда \copy
--- с путём на стороне клиента -- см. README.md.
---
--- В файле отзывов встречаются многострочные тексты комментариев, заключённые
--- в кавычки. Стандартный разбор CSV обрабатывает их корректно: перевод строки
--- внутри кавычек не считается концом записи.
-
+-- загрузка CSV, папка с файлами подключена в контейнер
 COPY olist.customers
     FROM '/data/olist/olist_customers_dataset.csv'
     WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
@@ -157,12 +133,7 @@ COPY olist.product_category_name_translation
     FROM '/data/olist/product_category_name_translation.csv'
     WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
--- ---------------------------------------------------------------------------
--- 4. Первичные и внешние ключи
--- ---------------------------------------------------------------------------
--- Ключи добавляются после массовой загрузки: при активных ограничениях СУБД
--- проверяла бы каждую вставляемую строку, что заметно замедляет импорт.
-
+-- первичные ключи
 ALTER TABLE olist.customers ADD CONSTRAINT pk_customers PRIMARY KEY (customer_id);
 ALTER TABLE olist.orders ADD CONSTRAINT pk_orders PRIMARY KEY (order_id);
 ALTER TABLE olist.products ADD CONSTRAINT pk_products PRIMARY KEY (product_id);
@@ -176,6 +147,7 @@ ALTER TABLE olist.order_payments
 ALTER TABLE olist.order_reviews
     ADD CONSTRAINT pk_order_reviews PRIMARY KEY (review_id, order_id);
 
+-- внешние ключи
 ALTER TABLE olist.orders ADD CONSTRAINT fk_orders_customer
     FOREIGN KEY (customer_id) REFERENCES olist.customers(customer_id);
 ALTER TABLE olist.order_items ADD CONSTRAINT fk_items_order
@@ -189,12 +161,7 @@ ALTER TABLE olist.order_payments ADD CONSTRAINT fk_payments_order
 ALTER TABLE olist.order_reviews ADD CONSTRAINT fk_reviews_order
     FOREIGN KEY (order_id) REFERENCES olist.orders(order_id);
 
--- ---------------------------------------------------------------------------
--- 5. Сбор статистики
--- ---------------------------------------------------------------------------
--- ANALYZE обновляет статистику планировщика. Без неё оценки числа строк
--- остаются нулевыми, и планы запросов в работах 13-14 были бы недостоверны.
-
+-- обновляю статистику
 ANALYZE olist.customers;
 ANALYZE olist.geolocation;
 ANALYZE olist.orders;
