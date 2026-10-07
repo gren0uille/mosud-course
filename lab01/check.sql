@@ -21,7 +21,7 @@ FROM (
 ) AS counts
 ORDER BY table_name;
 
--- пустые значения в ключевых полях
+-- пустые значения в главных полях
 SELECT 'customers.customer_id' AS column_name, count(*) AS null_count
     FROM olist.customers WHERE customer_id IS NULL
 UNION ALL SELECT 'orders.order_id', count(*)
