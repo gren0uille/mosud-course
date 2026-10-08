@@ -1,11 +1,8 @@
 -- Практическая работа № 5. Кванторы, EXISTS и реляционное деление
 -- Камалов Т. А. ИНБО-20-23
 -- Вариант 8: S = {MS, MT, GO}
--- Найти категории, которые покупали в доставленных заказах клиенты
--- каждого штата из S. Категории NULL исключены.
 
--- Продажи: категория, штат покупателя, заказ (только delivered).
--- Представление в схеме lab, чтобы не повторять соединение в каждом запросе.
+-- продажи по категориям и штатам, delivered, без NULL-категорий
 CREATE OR REPLACE VIEW lab.lab05_sales AS
 SELECT p.product_category_name AS category,
        c.customer_state        AS state,
@@ -17,13 +14,8 @@ JOIN olist.products p    ON p.product_id = oi.product_id
 WHERE o.order_status = 'delivered'
   AND p.product_category_name IS NOT NULL;
 
--- Делимое: пары (category, state). Делитель: target_states.
--- Частное: категории c, для которых ∀ s ∈ S: (c, s) ∈ sales.
-
 
 -- 1, 2. Двойной NOT EXISTS
--- ∀s P(c, s) ≡ ¬∃s ¬P(c, s):
--- нет такого штата из S, в котором категория не продавалась.
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 categories AS (SELECT DISTINCT category FROM lab.lab05_sales)
 SELECT k.category
@@ -36,8 +28,7 @@ WHERE NOT EXISTS (
 ORDER BY k.category;
 
 
--- 3. GROUP BY / HAVING COUNT(DISTINCT state)
--- Число различных штатов из S, где была категория, равно |S|.
+-- 3. HAVING COUNT(DISTINCT)
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO'))
 SELECT s.category
 FROM lab.lab05_sales s
@@ -47,8 +38,7 @@ HAVING count(DISTINCT s.state) = (SELECT count(*) FROM target_states)
 ORDER BY s.category;
 
 
--- 4. EXCEPT и NOT EXISTS
--- S минус штаты категории пусто => категория есть во всех штатах S.
+-- 4. EXCEPT
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 categories AS (SELECT DISTINCT category FROM lab.lab05_sales)
 SELECT k.category
@@ -60,7 +50,7 @@ WHERE NOT EXISTS (
 ORDER BY k.category;
 
 
--- 5. Эквивалентность трёх решений: EXCEPT в обе стороны, ожидаются нули.
+-- 5. Сверка решений
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 categories AS (SELECT DISTINCT category FROM lab.lab05_sales),
 r1 AS (
@@ -91,13 +81,11 @@ SELECT 'r2 (HAVING)', (SELECT count(*) FROM r2), NULL, NULL,
        (SELECT count(*) FROM (SELECT * FROM r3 EXCEPT SELECT * FROM r2) d)
 UNION ALL
 SELECT 'r3 (EXCEPT)', (SELECT count(*) FROM r3), NULL, NULL, NULL, NULL;
--- Все разности пусты => три решения дают одно и то же множество.
--- Для контроля: сколько всего категорий с продажами.
+-- всего категорий
 SELECT count(DISTINCT category) AS all_categories FROM lab.lab05_sales;
 
 
--- 6. Диагностика для одной найденной категории:
--- категория → штат → число заказов
+-- 6. Диагностика
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO'))
 SELECT s.category, t.state, count(DISTINCT s.order_id) AS orders
 FROM target_states t
@@ -105,7 +93,7 @@ LEFT JOIN lab.lab05_sales s ON s.state = t.state AND s.category = 'beleza_saude'
 GROUP BY s.category, t.state
 ORDER BY t.state;
 
--- для контраста категория, которой нет в MS, поэтому она не попала в частное
+-- нет в MS
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO'))
 SELECT 'climatizacao' AS category, t.state, count(DISTINCT s.order_id) AS orders
 FROM target_states t
@@ -115,8 +103,6 @@ ORDER BY t.state;
 
 
 -- 7. Пустой target_states
--- Логически: ∀s ∈ ∅ P(s) — истина (пустая истинность),
--- значит, в частное должны попасть ВСЕ категории.
 WITH target_states(state) AS (SELECT 'XX'::text WHERE false),
 categories AS (SELECT DISTINCT category FROM lab.lab05_sales)
 SELECT 'двойной NOT EXISTS' AS solution, count(*) AS categories
@@ -138,14 +124,11 @@ WHERE NOT EXISTS (
     SELECT state FROM target_states
     EXCEPT
     SELECT s.state FROM lab.lab05_sales s WHERE s.category = k.category);
--- NOT EXISTS и EXCEPT возвращают все категории: это соответствует логике,
--- нет ни одного обязательного штата, который бы не выполнялся.
--- HAVING возвращает 0: JOIN с пустым делителем не даёт ни одной строки,
--- групп нет, проверять HAVING не на чем. На пустом делителе это решение
--- расходится с математическим определением деления.
+-- NOT EXISTS и EXCEPT: все категории (условие "для всех" на пустом множестве истинно).
+-- HAVING: 0, т. к. после JOIN с пустым S групп нет.
 
 
--- 8. Дополнительно: продавцы, которые продавали покупателям всех штатов S
+-- 8. Продавцы, продававшие во все штаты S
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 seller_states AS (
     SELECT DISTINCT oi.seller_id, c.customer_state AS state
@@ -161,7 +144,6 @@ WHERE NOT EXISTS (
     WHERE NOT EXISTS (SELECT 1 FROM seller_states ss
                       WHERE ss.seller_id = sl.seller_id AND ss.state = t.state));
 
--- первые 10 таких продавцов с городом
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 seller_states AS (
     SELECT DISTINCT oi.seller_id, c.customer_state AS state
