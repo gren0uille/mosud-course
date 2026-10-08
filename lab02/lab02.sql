@@ -28,6 +28,7 @@ FROM lab.lab02_a
 UNION ALL
 SELECT 'B (MS)', count(*), count(DISTINCT product_id)
 FROM lab.lab02_b;
+-- результат: A (MT) 1037 841; B (MS) 811 647
 
 
 -- 2. Объединение A ∪ B
@@ -40,6 +41,7 @@ SELECT 'UNION ALL', count(*)
 FROM (SELECT product_id FROM lab.lab02_a
       UNION ALL
       SELECT product_id FROM lab.lab02_b) t;
+-- результат: UNION 1395; UNION ALL 1848
 -- UNION ALL = |A| + |B|, UNION = |A| + |B| - |A ∩ B| по различным
 
 
@@ -48,12 +50,14 @@ SELECT count(*) AS intersect_rows
 FROM (SELECT product_id FROM lab.lab02_a
       INTERSECT
       SELECT product_id FROM lab.lab02_b) t;
+-- результат: 93
 
 SELECT product_id FROM lab.lab02_a
 INTERSECT
 SELECT product_id FROM lab.lab02_b
 ORDER BY product_id
 LIMIT 10;
+-- результат: 10 строк
 
 
 -- 4. Разности A − B и B − A
@@ -66,6 +70,7 @@ SELECT 'B - A', count(*)
 FROM (SELECT product_id FROM lab.lab02_b
       EXCEPT
       SELECT product_id FROM lab.lab02_a) t;
+-- результат: A - B 748; B - A 554
 
 
 -- 5. Коммутативность: симметрическая разность должна быть пустой
@@ -90,6 +95,7 @@ FROM (
      EXCEPT
      (SELECT product_id FROM lab.lab02_a INTERSECT SELECT product_id FROM lab.lab02_b))
 ) t;
+-- результат: A ∪ B vs B ∪ A 0; A ∩ B vs B ∩ A 0
 
 
 -- 6. Разность некоммутативна
@@ -106,6 +112,7 @@ FROM (
     EXCEPT
     (SELECT product_id FROM lab.lab02_a EXCEPT SELECT product_id FROM lab.lab02_b)
 ) t;
+-- результат: в A - B, но не в B - A 748; в B - A, но не в A - B 554
 
 
 -- 7. Пересечение без INTERSECT, через EXISTS
@@ -115,6 +122,7 @@ FROM (
     FROM lab.lab02_a a
     WHERE EXISTS (SELECT 1 FROM lab.lab02_b b WHERE b.product_id = a.product_id)
 ) t;
+-- результат: 93
 
 -- сверка с INTERSECT
 SELECT count(*) AS differences
@@ -124,12 +132,14 @@ FROM (
     SELECT a.product_id FROM lab.lab02_a a
     WHERE EXISTS (SELECT 1 FROM lab.lab02_b b WHERE b.product_id = a.product_id)
 ) t;
+-- результат: 0
 
 
 -- 8. Дубликаты: тот же запрос с EXISTS, но без DISTINCT
 SELECT count(*) AS rows, count(DISTINCT product_id) AS distinct_products
 FROM lab.lab02_a a
 WHERE EXISTS (SELECT 1 FROM lab.lab02_b b WHERE b.product_id = a.product_id);
+-- результат: rows = 149, distinct_products = 93
 
 SELECT a.product_id, count(*) AS times
 FROM lab.lab02_a a
@@ -138,13 +148,13 @@ GROUP BY a.product_id
 HAVING count(*) > 1
 ORDER BY times DESC, a.product_id
 LIMIT 10;
+-- результат: 10 строк
 
 SELECT 'INTERSECT ALL' AS op, count(*) AS rows
 FROM (SELECT product_id FROM lab.lab02_a INTERSECT ALL SELECT product_id FROM lab.lab02_b) t
 UNION ALL
 SELECT 'EXCEPT ALL (A - B)', count(*)
 FROM (SELECT product_id FROM lab.lab02_a EXCEPT ALL SELECT product_id FROM lab.lab02_b) t;
-
-
+-- результат: INTERSECT ALL 120; EXCEPT ALL (A - B) 917
 -- 9. Множество: UNION, INTERSECT, EXCEPT, SELECT DISTINCT.
 -- Мультимножество: UNION ALL, INTERSECT ALL, EXCEPT ALL, SELECT, JOIN, EXISTS без DISTINCT.

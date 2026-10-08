@@ -26,6 +26,7 @@ WHERE NOT EXISTS (
         SELECT 1 FROM lab.lab05_sales s
         WHERE s.category = k.category AND s.state = t.state))
 ORDER BY k.category;
+-- результат: 47 строк
 
 
 -- 3. HAVING COUNT(DISTINCT)
@@ -36,6 +37,7 @@ JOIN target_states t ON t.state = s.state
 GROUP BY s.category
 HAVING count(DISTINCT s.state) = (SELECT count(*) FROM target_states)
 ORDER BY s.category;
+-- результат: 47 строк
 
 
 -- 4. EXCEPT
@@ -48,6 +50,7 @@ WHERE NOT EXISTS (
     EXCEPT
     SELECT s.state FROM lab.lab05_sales s WHERE s.category = k.category)
 ORDER BY k.category;
+-- результат: 47 строк
 
 
 -- 5. Сверка решений
@@ -81,8 +84,10 @@ SELECT 'r2 (HAVING)', (SELECT count(*) FROM r2), NULL, NULL,
        (SELECT count(*) FROM (SELECT * FROM r3 EXCEPT SELECT * FROM r2) d)
 UNION ALL
 SELECT 'r3 (EXCEPT)', (SELECT count(*) FROM r3), NULL, NULL, NULL, NULL;
+-- результат: r1, r2, r3 по 47 категорий, все разности 0
 -- всего категорий
 SELECT count(DISTINCT category) AS all_categories FROM lab.lab05_sales;
+-- результат: 73
 
 
 -- 6. Диагностика
@@ -92,6 +97,7 @@ FROM target_states t
 LEFT JOIN lab.lab05_sales s ON s.state = t.state AND s.category = 'beleza_saude'
 GROUP BY s.category, t.state
 ORDER BY t.state;
+-- результат: beleza_saude GO 206; beleza_saude MS 57; beleza_saude MT 83
 
 -- нет в MS
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO'))
@@ -100,6 +106,7 @@ FROM target_states t
 LEFT JOIN lab.lab05_sales s ON s.state = t.state AND s.category = 'climatizacao'
 GROUP BY t.state
 ORDER BY t.state;
+-- результат: climatizacao GO 6; climatizacao MS 0; climatizacao MT 3
 
 
 -- 7. Пустой target_states
@@ -124,6 +131,7 @@ WHERE NOT EXISTS (
     SELECT state FROM target_states
     EXCEPT
     SELECT s.state FROM lab.lab05_sales s WHERE s.category = k.category);
+-- результат: двойной NOT EXISTS 73; HAVING COUNT 0; EXCEPT 73
 -- NOT EXISTS и EXCEPT: все категории (условие "для всех" на пустом множестве истинно).
 -- HAVING: 0, т. к. после JOIN с пустым S групп нет.
 
@@ -143,6 +151,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM target_states t
     WHERE NOT EXISTS (SELECT 1 FROM seller_states ss
                       WHERE ss.seller_id = sl.seller_id AND ss.state = t.state));
+-- результат: 163
 
 WITH target_states(state) AS (VALUES ('MS'), ('MT'), ('GO')),
 seller_states AS (
@@ -160,3 +169,4 @@ WHERE NOT EXISTS (
                       WHERE ss.seller_id = se.seller_id AND ss.state = t.state))
 ORDER BY se.seller_id
 LIMIT 10;
+-- результат: 10 строк
